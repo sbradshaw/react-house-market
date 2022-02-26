@@ -15,7 +15,7 @@ import Spinner from "../components/Spinner";
 
 function CreateListing() {
   // eslint-disable-next-line
-  const [geolocationEnabled, setGeolocationEnabled] = useState(true);
+  const [geolocationEnabled, setGeolocationEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: "rent",
@@ -120,9 +120,7 @@ function CreateListing() {
       return new Promise((resolve, reject) => {
         const storage = getStorage();
         const fileName = `${auth.currentUser.uid}-${image.name}-${uuidv4()}`;
-
         const storageRef = ref(storage, "images/" + fileName);
-
         const uploadTask = uploadBytesResumable(storageRef, image);
 
         uploadTask.on(
@@ -147,7 +145,6 @@ function CreateListing() {
           },
           () => {
             // Handle successful uploads on complete
-            // For instance, get the download URL: https://firebasestorage.googleapis.com/...
             getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
               resolve(downloadURL);
             });
@@ -177,7 +174,9 @@ function CreateListing() {
     !formDataCopy.offer && delete formDataCopy.discountedPrice;
 
     const docRef = await addDoc(collection(db, "listings"), formDataCopy);
+
     setLoading(false);
+
     toast.success("Listing saved");
     navigate(`/category/${formDataCopy.type}/${docRef.id}`);
   };

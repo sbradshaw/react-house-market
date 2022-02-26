@@ -24,3 +24,4 @@ yarn-error.log*
 
 # custom
 firebase.config.js
+.env

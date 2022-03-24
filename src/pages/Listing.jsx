@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import SwiperCore, { Navigation, Pagination, Scrollbar, A11y } from "swiper";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/swiper-bundle.css";
 import { getDoc, doc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../firebase.config";
 import Spinner from "../components/Spinner";
 import shareIcon from "../assets/svg/shareIcon.svg";
+
+SwiperCore.use([Navigation, Pagination, Scrollbar, A11y]);
 
 function Listing() {
   const [listing, setListing] = useState(null);
@@ -38,8 +43,21 @@ function Listing() {
 
   return (
     <main>
-      {/* TODO: Slider */}
-
+      <Swiper slidesPerView={1} pagination={{ clickable: true }}>
+        {listing.imageUrls.map((url, index) => {
+          return (
+            <SwiperSlide key={index}>
+              <div
+                className="swiperSlideDiv"
+                style={{
+                  background: `url(${listing.imageUrls[index]}) center no-repeat`,
+                  backgroundSize: "cover",
+                }}
+              ></div>
+            </SwiperSlide>
+          );
+        })}
+      </Swiper>
       <div
         className="shareIconDiv"
         onClick={() => {
@@ -106,6 +124,7 @@ function Listing() {
             </Marker>
           </MapContainer>
         </div>
+
         {auth.currentUser?.uid !== listing.userRef && (
           <Link
             to={`/contact/${listing.userRef}?listingName=${listing.name}`}

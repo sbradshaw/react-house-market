@@ -1,14 +1,27 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { getAuth, updateProfile } from "firebase/auth";
-import { updateDoc, doc } from "firebase/firestore";
+import {
+  updateDoc,
+  doc,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  deleteDoc,
+} from "firebase/firestore";
 import { db } from "../firebase.config";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import ListingItem from "../components/ListingItem";
 import arrowRight from "../assets/svg/keyboardArrowRightIcon.svg";
 import homeIcon from "../assets/svg/homeIcon.svg";
 
 function Profile() {
   const auth = getAuth();
+  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState(null);
   const [changeDetails, setChangeDetails] = useState(false);
   const [formData, setFormData] = useState({
     name: auth.currentUser.displayName,
@@ -19,6 +32,34 @@ function Profile() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchUserListings = async () => {
+      const listingsRef = collection(db, "listings");
+
+      const q = query(
+        listingsRef,
+        where("userRef", "==", auth.currentUser.uid),
+        orderBy("timestamp", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      let listings = [];
+
+      querySnapshot.forEach((doc) => {
+        return listings.push({
+          id: doc.id,
+          data: doc.data(),
+        });
+      });
+
+      setListings(listings);
+      setLoading(false);
+    };
+
+    fetchUserListings();
+  }, [auth.currentUser.uid]);
+
   const onLogout = () => {
     auth.signOut();
     navigate("/");
@@ -27,35 +68,51 @@ function Profile() {
   const onSubmit = async () => {
     try {
       if (auth.currentUser.displayName !== name) {
-        // Update displayName in Firebase
+        // Update display name firebase
         await updateProfile(auth.currentUser, {
           displayName: name,
         });
 
-        // Update in Firestore
+        // Update in firestore
         const userRef = doc(db, "users", auth.currentUser.uid);
         await updateDoc(userRef, {
           name,
         });
       }
     } catch (error) {
-      toast.error("Cound not update the profile details");
+      console.log(error);
+      toast.error("Could not update profile details");
     }
   };
 
-  const onChange = (event) => {
+  const onChange = (e) => {
     setFormData((prevState) => ({
       ...prevState,
-      [event.target.id]: event.target.value,
+      [e.target.id]: e.target.value,
     }));
   };
+
+  const onDelete = async (listingId) => {
+    if (window.confirm("Are you sure you want to delete?")) {
+      await deleteDoc(doc(db, "listings", listingId));
+
+      const updatedListings = listings.filter(
+        (listing) => listing.id !== listingId
+      );
+
+      setListings(updatedListings);
+      toast.success("Successfully deleted listing");
+    }
+  };
+
+  const onEdit = (listingId) => navigate(`/edit-listing/${listingId}`);
 
   return (
     <div className="profile">
       <header className="profileHeader">
         <p className="pageHeader">My Profile</p>
         <button type="button" className="logOut" onClick={onLogout}>
-          LogOut
+          Logout
         </button>
       </header>
       <main>
@@ -75,7 +132,6 @@ function Profile() {
           <form>
             <input
               type="text"
-              name="name"
               id="name"
               className={!changeDetails ? "profileName" : "profileNameActive"}
               disabled={!changeDetails}
@@ -84,7 +140,6 @@ function Profile() {
             />
             <input
               type="text"
-              name="email"
               id="email"
               className={!changeDetails ? "profileEmail" : "profileEmailActive"}
               disabled={!changeDetails}
@@ -98,6 +153,22 @@ function Profile() {
           <p>Sell or rent your home</p>
           <img src={arrowRight} alt="arrow right" />
         </Link>
+        {!loading && listings?.length > 0 && (
+          <>
+            <p className="listingText">Your Listings</p>
+            <ul className="listingsList">
+              {listings.map((listing) => (
+                <ListingItem
+                  key={listing.id}
+                  listing={listing.data}
+                  id={listing.id}
+                  onDelete={() => onDelete(listing.id)}
+                  onEdit={() => onEdit(listing.id)}
+                />
+              ))}
+            </ul>
+          </>
+        )}
       </main>
     </div>
   );

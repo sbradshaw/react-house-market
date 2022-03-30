@@ -15,6 +15,7 @@ SwiperCore.use([Navigation, Pagination, Scrollbar, A11y]);
 function Listing() {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ function Listing() {
       const docSnapshot = await getDoc(docRef);
 
       if (docSnapshot.exists()) {
-        console.log(docSnapshot.data());
+        // console.log(docSnapshot.data());
 
         setListing(docSnapshot.data());
         setLoading(false);
